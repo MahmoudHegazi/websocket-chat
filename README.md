@@ -2,7 +2,7 @@
 using node.js , JavaScript, socket.io and typescript, HTML to create chat room application with
 feature to identify users with dummy unique ids and name, and identify the current sender (you User) user and apply
 to it some styles also for a feature with good performance for display when one or more user are typing and also remove the users typing
-notification for users that not typing, also display notification for the users for each new user join the room
+notification for users that not typing, also display notification for the users for each new user join the room (Performance friendly)
 
 # how to start
 
