@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Socket.IO Dummy chat ROOM</title>
+    <style>
+      body { margin: 0; padding-bottom: 3rem; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+
+      #form { background: rgba(0, 0, 0, 0.15); padding: 0.25rem; position: fixed; bottom: 0; left: 0; right: 0; display: flex; height: 3rem; box-sizing: border-box; backdrop-filter: blur(10px); }
+      #input { border: none; padding: 0 1rem; flex-grow: 1; border-radius: 2rem; margin: 0.25rem; }
+      #input:focus { outline: none; }
+      #form > button { background: #333; border: none; padding: 0 1rem; margin: 0.25rem; border-radius: 3px; outline: none; color: #fff; }
+
+      #messages { list-style-type: none; margin: 0; padding: 0; width: 80%; }
+      #messages > li { padding: 0.5rem 1rem; }
+      #messages > li:nth-child(odd) { background: #efefef;}
+      .chatcont {display: flex; justify-content: center; align-items: center;}
+      #users {width: 20%; background: lightgray;}
+      .current_usermsg {
+        background: lightblue !important;
+        border: 1px solid black;
+      }
+      .before_current {
+        background: blue !important;
+        color: white !important;
+      }
+      .newmsg{
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+
+      }
+      .icondata{
+        max-width: 20%;
+        overflow: auto;
+        width: 20%;
+        margin-right: 10px;
+        text-align: center;
+        padding: 5px;
+        color: black;
+        background: lightgray;
+      }
+      .messagecont {width: 80%; padding: 10px; background: gray; color: white;}
+      /* if socket not restarted page with js edit will apply old edits */
+
+      .notify_div{
+        background: lightgreen;
+        color: black;
+        padding: 10px;
+        border: 1px solid lightgray;
+      }
+      .current_notify{
+        background: blue;
+        color: white;
+      }
+      #notifCont{
+        height: fit-content;
+        max-height: 300px;
+        min-height: fit-content;
+        width: 80%;
+        margin-left: auto;
+        margin-right: auto;
+        margin-bottom: 3px;
+        margin-top: 3px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h2>Tour chart Room Your Ideintiy unknown</h2>
+    <div id="notifCont"></div>
+    <div class="chatcont">
+      <ul id="messages"></ul>
+      <ul id="typingshow"></ul>
+    </div>
+
+    <form id="form" action="">
+      <input id="input" autocomplete="off" /><button>Send</button>
+    </form>
+    <!-- thsis global file from node_modules but it exist global / -->
+    <script src="/socket.io/socket.io.js"></script>
+<script>
+  // must define currentUser is top global
+  let currentUser;
+  // connect to socket via client side
+  var socket = io();
+  const theForm = document.querySelector('form');
+  const textInput = document.querySelector('#input');
+  let writers = [];
+
+  // this join room event also set the first joined object which is current user to the js client
+  socket.on('setuser', (user)=>{
+    let sameUser = false;
+    // considering the first time get this event is when current user connected as he must be the first one connected when he open the chat page
+    if (!currentUser){
+      // this is the current user that exucted this js file at hist firsttime
+      currentUser = user;
+      sameUser = true;
+      console.log(currentUser);
+    }
+    // other users join
+    console.log('some one join');
+    createJoinNotifcation(user, sameUser);
+  });
+
+  theForm.addEventListener('submit', (event)=>{
+    event.preventDefault();
+    socket.emit('send message',textInput.value);
+    textInput.value = '';
+  });
+
+  const notifcationDivsCont = document.getElementById('notifCont');
+
+  function createJoinNotifcation(user, current=false){
+    const newDiv = document.createElement('div');
+    newDiv.classList.add('notify_div');
+    if (current){
+        newDiv.classList.add('current_notify');
+        newDiv.innerText = `You: Joined The Chat Room, Hello ${user.name}`;
+    } else {
+        newDiv.innerText = `${user.name}: Joined The Chat Room, Say Hello to ${user.name}`;
+    }
+
+    setTimeout(()=>{
+      const currentDiv = newDiv;
+      currentDiv.remove();
+    }, 60000);
+    notifcationDivsCont.appendChild(newDiv);
+  }
+  function sendMessage(user, message, current=false){
+      const newMsgLi = document.createElement('li');
+      const senderCont = document.createElement('span');
+      const messageCont = document.createElement('span');
+      newMsgLi.classList.add('newmsg');
+      let msgHTML = '';
+      if (current == true){
+        msgHTML = `<span class="before_current icondata">You: </span><span class="current_usermsg messagecont">${message}</span>`;
+      } else {
+        msgHTML = `<span class="icondata">${user.name}: </span><span class="messagecont">${message}</span>`;
+      }
+      newMsgLi.innerHTML = msgHTML;
+      messagesUl.appendChild(newMsgLi);
+  }
+
+  // now listen for send message event emited by socket server
+  const messagesUl = document.querySelector("#messages");
+  socket.on('send message', (msgData)=>{
+    // add the message with user recived not the current user
+    sendMessage(msgData.sender, message=msgData.msg, current= (msgData.sender.id === currentUser.id));
+    // save clear typing when someone send this should not waited for it as endedtyping will notify
+    socket.emit('endedtyping', currentUser); // apply endedtyping event or action when submit the form aswell
+  });
+
+  textInput.addEventListener('input', (event)=>{
+    const targetValue = event.target.value;
+    if (targetValue != ''){
+      socket.emit('typing', currentUser);
+    } else {
+      socket.emit('endedtyping', currentUser);
+    }
+  });
+
+  function createWriter(user){
+    const isCurrentUser = currentUser.id == user.id;
+    const cellClass = isCurrentUser ? 'current_writer' : 'other_writer';
+    const textLog = isCurrentUser ? `You Typing..` : `${user.name} typing...`;
+    return `<li id="uid_${user.id}" class="${cellClass} writer_cell">${textLog}</li>`;
+  }
+
+  const showTyping = document.querySelector('#typingshow');
+  socket.on('typing', (user)=>{
+    const userExist = writers.find((u)=>{return u.id === user.id});
+    // push writer one time
+    if (typeof(userExist) === 'undefined'){
+      writers.push(user);
+      // append new notify to writer uniquely
+      showTyping.innerHTML += createWriter(user);
+    }
+    console.log('this users Are typing', writers);
+  });
+  // get index of object from array
+  function getIndex(allWriters, u){
+    let getIndex = -1;
+    for (let i=0; i<allWriters.length; i++){
+      if (JSON.stringify(allWriters[i]) == JSON.stringify(u)){
+        getIndex = i;
+        break;
+      }
+    }
+    return getIndex;
+  }
+
+  // if input become empty so ended typing
+  socket.on('endedtyping', (user)=>{
+    // remove the appended writer icon with very good performance as it run one time and not reacreate the full html it target remove
+    const writerToRemove = document.getElementById(`uid_${user.id}`);
+    const writerIndex = getIndex(writers, user);
+    if (writerIndex != -1){
+      // remove the writer from the writers array savly
+      writers.splice(writerIndex, 1);
+    }
+    console.log(writerIndex);
+    // remove the writer li
+    if (writerToRemove){
+      writerToRemove.remove();
+    }
+    console.log(user)
+  })
+</script>
+  </body>
+</html>

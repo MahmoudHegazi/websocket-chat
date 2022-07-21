@@ -1,0 +1,36 @@
+{
+  "name": "expressApi",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "npx tsc",
+    "test": "npm run build && jasmine",
+    "start": "npm run build && node ./dist/src/socketApp.js",
+    "devstart": "nodemon src/socketApp.ts"
+  },
+  "keywords": ["nodejs", "typescript", "socketio", "js", "html", "css"],
+  "author": "Python King",
+  "license": "ISC",
+  "dependencies": {
+    "@types/express": "^4.17.13",
+    "@types/jasmine": "^4.0.3",
+    "@types/node": "^18.0.6",
+    "cors": "^2.8.5",
+    "csvtojson": "^2.0.10",
+    "express": "^4.18.1",
+    "express-async-errors": "^3.1.1",
+    "http-server-request-handlers-error-logger": "^0.1.7",
+    "jasmine": "^4.2.1",
+    "morgan": "^1.10.0",
+    "nodemon": "^2.0.19",
+    "rotating-file-stream": "^3.0.4",
+    "socket.io": "^4.5.1",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.7.4"
+  },
+  "devDependencies": {
+    "@types/morgan": "^1.9.3",
+    "@types/socket.io": "^3.0.2"
+  }
+}
